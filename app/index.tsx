@@ -1,12 +1,47 @@
-import { Text, View } from "react-native";
+import { View, ScrollView } from "react-native";
+import { useKDSOrders } from "@/hooks/useKDSOrders";
+import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
+import { logout } from "@/services/firebase/auth";
 
-export default function HomeScreen() {
+export default function KDSScreen() {
+  const { activeOrders, completedOrders, startTimes, toggleItem, completeOrder } =
+    useKDSOrders();
+
   return (
-    <View className="flex-1 items-center justify-center bg-white px-6">
-      <Text className="text-2xl font-bold text-blue-500">AsianLeKDS</Text>
-      <Text className="mt-2 text-base text-neutral-600">
-        NativeWind is set up.
-      </Text>
+    <View className="flex-1 bg-[#0f1117]">
+      <KDSHeader
+        activeCount={activeOrders.length}
+        completedCount={completedOrders.length}
+        onLogout={() => {
+          void logout();
+        }}
+      />
+      <ScrollView
+        horizontal
+        className="flex-1"
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ alignItems: "stretch", paddingHorizontal: 4 }}
+      >
+        {activeOrders.map((o) => (
+          <OrderCard
+            key={o.order.id}
+            kdsOrder={o}
+            onToggleItem={(index) => toggleItem(o.order.id!, index)}
+            onComplete={() => completeOrder(o.order.id!)}
+            startTime={startTimes[o.order.id!] ?? Date.now()}
+          />
+        ))}
+        {completedOrders.length > 0 && <QueueDivider />}
+        {completedOrders.map((o) => (
+          <OrderCard
+            key={o.order.id}
+            kdsOrder={o}
+            onToggleItem={(index) => toggleItem(o.order.id!, index)}
+            onComplete={() => completeOrder(o.order.id!)}
+            startTime={startTimes[o.order.id!] ?? Date.now()}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }
