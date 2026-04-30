@@ -1,8 +1,8 @@
 import { KDSOrder } from "@/types/kds";
+import { groupOrderItemsByDisplaySection } from "@/utils/orderItemSections";
 import { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { OrderItemRow } from "./OrderItemRow";
-import { groupOrderItemsByDisplaySection } from "@/utils/orderItemSections";
 
 interface Props {
   kdsOrder: KDSOrder;
@@ -40,7 +40,7 @@ export function OrderCard({
 
   return (
     <View
-      className={`w-[190px] mx-1.5 my-2 rounded-xl border overflow-hidden flex-col ${
+      className={`w-[300px] mx-1.5 my-2 rounded-xl border overflow-hidden flex-col ${
         isCompleted
           ? "opacity-40 bg-[#141720] border-white/[0.04]"
           : "bg-[#1e2235] border-white/10"
@@ -60,9 +60,7 @@ export function OrderCard({
           </View>
         </View>
         <View className="flex-row items-center justify-between mt-1">
-          <Text className="text-white/50 text-xs">
-            {order.guests} Guests{order.status}
-          </Text>
+          <Text className="text-white/50 text-xs">Guests: {order.guests}</Text>
           {isCompleted && <Text className="text-white/40 text-xs">Done</Text>}
         </View>
       </View>
@@ -76,8 +74,12 @@ export function OrderCard({
         showsVerticalScrollIndicator={false}
       >
         {(() => {
-          const indexByRef = new Map(items.map((it, idx) => [it, idx] as const));
-          const sections = groupOrderItemsByDisplaySection(items as any) as Array<{
+          const indexByRef = new Map(
+            items.map((it, idx) => [it, idx] as const),
+          );
+          const sections = groupOrderItemsByDisplaySection(
+            items as any,
+          ) as Array<{
             tier: number;
             title: string;
             items: typeof items;

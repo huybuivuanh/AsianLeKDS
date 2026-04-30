@@ -5,6 +5,7 @@
  */
 
 import { KitchenType, OrderItem } from "@/types/types";
+import { preprocessOrderItems } from "./preprocessOrderItems";
 
 export type OrderItemDisplayTier = 0 | 1 | 2;
 
@@ -75,7 +76,7 @@ export type OrderItemDisplaySection = {
 export function groupOrderItemsByDisplaySection(
   items: OrderItem[],
 ): OrderItemDisplaySection[] {
-  const sorted = sortOrderItemsForDisplay(items);
+  const sorted = sortOrderItemsForDisplay(preprocessOrderItems(items));
   if (sorted.length === 0) return [];
 
   const sections: OrderItemDisplaySection[] = [];
