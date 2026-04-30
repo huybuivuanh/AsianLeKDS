@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { KDSOrder } from "@/types/kds";
 import { subscribeToActiveDineInOrders } from "@/services/firebase/orders";
+import { groupOrderItemsBySignature } from "@/utils/groupOrderItems";
 import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
 
 const MAX_COMPLETED = 3;
@@ -18,7 +19,7 @@ export function useKDSOrders() {
             ...prev,
             {
               order,
-              items: preprocessOrderItems(order.orderItems).map((item) => ({
+              items: preprocessOrderItems(groupOrderItemsBySignature(order.orderItems)).map((item) => ({
                 ...item,
                 completed: false,
               })),
@@ -36,7 +37,7 @@ export function useKDSOrders() {
             const existingById = new Map(
               o.items.filter((i) => i.id).map((i) => [i.id, i]),
             );
-            const items = preprocessOrderItems(order.orderItems).map((item) => ({
+            const items = preprocessOrderItems(groupOrderItemsBySignature(order.orderItems)).map((item) => ({
               ...item,
               completed: existingById.get(item.id)?.completed ?? false,
             }));

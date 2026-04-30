@@ -37,6 +37,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
                 item.completed ? "line-through" : ""
               }`}
             >
+              {item.quantity > 1 ? `${item.quantity}x ` : ""}
               {item.name}
             </Text>
           </View>
@@ -44,8 +45,9 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
           {item.options?.length ? (
             <>
               {item.options.map((o) => (
-                <Text key={o.name} className="text-slate-500 text-xs mt-0.5">
-                  * {o.name}
+                <Text key={o.name} className="text-xs mt-0.5">
+                  * {o.quantity > 1 ? `${o.quantity}x ` : ""}
+                  {o.name}
                 </Text>
               ))}
             </>
@@ -55,7 +57,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
               {item.changes.map((c) => (
                 <Text
                   key={`${c.from}-${c.to ?? ""}`}
-                  className="text-slate-500 text-xs mt-0.5"
+                  className="text-xs mt-0.5"
                 >
                   * Change: {`${c.from} → ${c.to}`}
                 </Text>
@@ -65,10 +67,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
           {item.extras?.length ? (
             <>
               {item.extras.map((e) => (
-                <Text
-                  key={e.description}
-                  className="text-slate-500 text-xs mt-0.5"
-                >
+                <Text key={e.description} className="text-xs mt-0.5">
                   {`+ Add Extra: ${e.description}`}
                 </Text>
               ))}

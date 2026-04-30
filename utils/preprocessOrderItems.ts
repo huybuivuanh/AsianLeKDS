@@ -9,11 +9,8 @@ const OPTION_NAMES = {
 
 function preprocessOrderItem(item: OrderItem) {
   const processed = { ...item };
-  const qty = processed.quantity;
-  processed.quantity = qty;
 
   if (!Array.isArray(processed.options) || processed.options.length === 0) {
-    processed.name = qty > 1 ? `${qty}x ${processed.name}` : processed.name;
     return processed;
   }
 
@@ -58,8 +55,6 @@ function preprocessOrderItem(item: OrderItem) {
       (opt) => opt !== riceNoodleOption,
     );
   }
-
-  processed.name = qty > 1 ? `${qty}x ${processed.name}` : processed.name;
 
   return processed;
 }
