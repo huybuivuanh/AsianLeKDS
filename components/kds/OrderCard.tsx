@@ -2,6 +2,7 @@ import { KDSOrder } from "@/types/kds";
 import { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { OrderItemRow } from "./OrderItemRow";
+import { groupOrderItemsByDisplaySection } from "@/utils/orderItemSections";
 
 interface Props {
   kdsOrder: KDSOrder;
@@ -74,14 +75,55 @@ export function OrderCard({
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
       >
-        {items.map((item, i) => (
-          <OrderItemRow
-            key={i}
-            item={item}
-            onToggle={() => onToggleItem(i)}
-            disabled={isCompleted}
-          />
-        ))}
+        {(() => {
+          const indexByRef = new Map(items.map((it, idx) => [it, idx] as const));
+          const sections = groupOrderItemsByDisplaySection(items as any) as Array<{
+            tier: number;
+            title: string;
+            items: typeof items;
+          }>;
+
+          const tierBadgeClass = (tier: number) => {
+            switch (tier) {
+              case 0:
+                return "bg-[#f2c94c] text-black";
+              case 2:
+                return "bg-[#2dd4bf] text-black";
+              default:
+                return "bg-[#2a2f45] text-white";
+            }
+          };
+
+          return sections.map((section) => (
+            <View key={section.tier} className="pt-2">
+              <View className="px-2 pb-1">
+                <View
+                  className={`self-start rounded-full px-3 py-1 ${tierBadgeClass(section.tier)}`}
+                >
+                  <Text
+                    className={`text-xs font-semibold ${
+                      section.tier === 1 ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {section.title}
+                  </Text>
+                </View>
+              </View>
+
+              {section.items.map((item) => {
+                const idx = indexByRef.get(item) ?? -1;
+                return (
+                  <OrderItemRow
+                    key={item.id ?? `${section.tier}-${idx}-${item.name}`}
+                    item={item}
+                    onToggle={() => idx >= 0 && onToggleItem(idx)}
+                    disabled={isCompleted || idx < 0}
+                  />
+                );
+              })}
+            </View>
+          ));
+        })()}
       </ScrollView>
 
       <View className="h-px bg-white/10 mx-3" />

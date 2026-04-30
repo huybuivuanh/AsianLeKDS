@@ -1,5 +1,5 @@
-import { TouchableOpacity, View, Text } from "react-native";
 import { KDSOrderItem } from "@/types/kds";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
   item: KDSOrderItem;
@@ -46,11 +46,6 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
               {item.quantity > 1 ? `[${item.quantity}] ` : ""}
               {item.name}
             </Text>
-            {item.appetizer && (
-              <View className="bg-red-600 rounded-full px-1.5 py-0.5 ml-1">
-                <Text className="text-white text-[9px] font-bold">APP</Text>
-              </View>
-            )}
           </View>
 
           {optionText ? (
