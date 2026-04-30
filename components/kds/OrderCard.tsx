@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { KDSOrder } from "@/types/kds";
+import { useEffect, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { OrderItemRow } from "./OrderItemRow";
 
 interface Props {
@@ -10,19 +10,12 @@ interface Props {
   startTime: number;
 }
 
-function formatElapsed(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}m ${String(s).padStart(2, "0")}s`;
-}
-
-function timerColor(seconds: number): string {
-  if (seconds < 300) return "text-[#22c87a]";
-  if (seconds < 600) return "text-[#f0a020]";
-  return "text-[#e84545]";
-}
-
-export function OrderCard({ kdsOrder, onToggleItem, onComplete, startTime }: Props) {
+export function OrderCard({
+  kdsOrder,
+  onToggleItem,
+  onComplete,
+  startTime,
+}: Props) {
   const [elapsed, setElapsed] = useState(
     Math.floor((Date.now() - startTime) / 1000),
   );
@@ -57,7 +50,7 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete, startTime }: Pro
       <View className="px-3 pt-3 pb-2">
         <View className="flex-row items-center justify-between">
           <Text className="text-white font-bold text-base">
-            T{order.tableNumber}
+            Table: {order.tableNumber}
           </Text>
           <View className="bg-[#2a2f45] rounded px-2 py-0.5">
             <Text className="text-white/60 text-xs" numberOfLines={1}>
@@ -67,15 +60,9 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete, startTime }: Pro
         </View>
         <View className="flex-row items-center justify-between mt-1">
           <Text className="text-white/50 text-xs">
-            {order.guests} guest{order.guests !== 1 ? "s" : ""}
+            {order.guests} Guests{order.status}
           </Text>
-          {isCompleted ? (
-            <Text className="text-white/40 text-xs">Done</Text>
-          ) : (
-            <Text className={`text-xs ${timerColor(elapsed)}`}>
-              {formatElapsed(elapsed)}
-            </Text>
-          )}
+          {isCompleted && <Text className="text-white/40 text-xs">Done</Text>}
         </View>
       </View>
 
