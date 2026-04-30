@@ -33,7 +33,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
             <Text
-              className={`text-slate-900 text-sm font-medium flex-1 ${
+              className={`text-slate-900 text-xl font-bold flex-1 ${
                 item.completed ? "line-through" : ""
               }`}
             >
@@ -45,7 +45,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
           {item.options?.length ? (
             <>
               {item.options.map((o) => (
-                <Text key={o.name} className="text-xs mt-0.5">
+                <Text key={o.name} className="text-lg mt-0.5">
                   * {o.quantity > 1 ? `${o.quantity}x ` : ""}
                   {o.name}
                 </Text>
@@ -57,7 +57,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
               {item.changes.map((c) => (
                 <Text
                   key={`${c.from}-${c.to ?? ""}`}
-                  className="text-xs mt-0.5"
+                  className="text-lg mt-0.5"
                 >
                   * Change: {`${c.from} → ${c.to}`}
                 </Text>
@@ -67,14 +67,14 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
           {item.extras?.length ? (
             <>
               {item.extras.map((e) => (
-                <Text key={e.description} className="text-xs mt-0.5">
+                <Text key={e.description} className="text-lg mt-0.5">
                   {`+ Add Extra: ${e.description}`}
                 </Text>
               ))}
             </>
           ) : null}
           {item.instructions && (
-            <Text className="text-amber-700 text-xs italic mt-0.5">
+            <Text className="text-amber-700 text-lg italic mt-0.5">
               * {item.instructions}
             </Text>
           )}

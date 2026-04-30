@@ -57,24 +57,28 @@ export function OrderCard({
       {/* Card header */}
       <View className="px-3 pt-3 pb-2">
         <View className="flex-row items-center justify-between">
-          <Text className="text-slate-900 font-bold text-base">
+          <Text className="text-slate-900 font-bold text-xl">
             Table: {order.tableNumber}
           </Text>
-          <Text className="text-slate-500 text-xs tabular-nums">
+          <Text className="text-slate-500 text-medium tabular-nums">
             {order.createdAt.toDate().toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </Text>
           <View className="bg-slate-100 rounded px-2 py-0.5">
-            <Text className="text-slate-600 text-xs" numberOfLines={1}>
+            <Text className="text-slate-600 text-medium" numberOfLines={1}>
               {order.staff}
             </Text>
           </View>
         </View>
         <View className="flex-row items-center justify-between mt-1">
-          <Text className="text-slate-500 text-xs">Guests: {order.guests}</Text>
-          {isCompleted && <Text className="text-slate-400 text-xs">Done</Text>}
+          <Text className="text-slate-500 text-medium">
+            Guests: {order.guests}
+          </Text>
+          {isCompleted && (
+            <Text className="text-slate-400 text-medium">Done</Text>
+          )}
         </View>
       </View>
 
@@ -105,7 +109,10 @@ export function OrderCard({
               return a.index - b.index;
             });
 
-          const byTier = new Map<number, Array<{ item: (typeof items)[number]; index: number }>>([
+          const byTier = new Map<
+            number,
+            Array<{ item: (typeof items)[number]; index: number }>
+          >([
             [0, []],
             [1, []],
             [2, []],
@@ -130,29 +137,29 @@ export function OrderCard({
           return ([0, 1, 2] as const)
             .filter((tier) => (byTier.get(tier)?.length ?? 0) > 0)
             .map((tier) => (
-            <View key={tier} className="pt-2">
-              <View className="px-2 pb-1">
-                <View
-                  className={`self-start rounded-full px-3 py-1 ${tierBadgeClass(tier)}`}
-                >
-                  <Text className="text-xs font-semibold text-slate-900">
-                    {SECTION_TITLES[tier]}
-                  </Text>
+              <View key={tier} className="pt-2">
+                <View className="px-2 pb-1">
+                  <View
+                    className={`self-start rounded-full px-3 py-1 ${tierBadgeClass(tier)}`}
+                  >
+                    <Text className="text-xs font-semibold text-slate-900">
+                      {SECTION_TITLES[tier]}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              {byTier.get(tier)!.map(({ item, index }) => {
-                return (
-                  <OrderItemRow
-                    key={item.id ?? `${tier}-${index}-${item.name}`}
-                    item={item}
-                    onToggle={() => onToggleItem(index)}
-                    disabled={false}
-                  />
-                );
-              })}
-            </View>
-          ));
+                {byTier.get(tier)!.map(({ item, index }) => {
+                  return (
+                    <OrderItemRow
+                      key={item.id ?? `${tier}-${index}-${item.name}`}
+                      item={item}
+                      onToggle={() => onToggleItem(index)}
+                      disabled={false}
+                    />
+                  );
+                })}
+              </View>
+            ));
         })()}
       </ScrollView>
 
