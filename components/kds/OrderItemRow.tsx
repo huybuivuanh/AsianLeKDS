@@ -37,7 +37,6 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
                 item.completed ? "line-through" : ""
               }`}
             >
-              {item.quantity > 1 ? `[${item.quantity}] ` : ""}
               {item.name}
             </Text>
           </View>

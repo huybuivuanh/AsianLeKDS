@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { KDSOrder } from "@/types/kds";
 import { subscribeToActiveDineInOrders } from "@/services/firebase/orders";
+import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
 
 const MAX_COMPLETED = 3;
 
@@ -17,7 +18,7 @@ export function useKDSOrders() {
             ...prev,
             {
               order,
-              items: order.orderItems.map((item) => ({
+              items: preprocessOrderItems(order.orderItems).map((item) => ({
                 ...item,
                 completed: false,
               })),
@@ -26,6 +27,22 @@ export function useKDSOrders() {
           ];
         });
         setStartTimes((prev) => ({ ...prev, [order.id!]: Date.now() }));
+      }
+
+      if (type === "modified") {
+        setKdsOrders((prev) =>
+          prev.map((o) => {
+            if (o.order.id !== order.id || o.status === "completed") return o;
+            const existingById = new Map(
+              o.items.filter((i) => i.id).map((i) => [i.id, i]),
+            );
+            const items = preprocessOrderItems(order.orderItems).map((item) => ({
+              ...item,
+              completed: existingById.get(item.id)?.completed ?? false,
+            }));
+            return { ...o, order, items };
+          }),
+        );
       }
 
       if (type === "removed") {
