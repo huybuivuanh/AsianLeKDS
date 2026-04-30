@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { loginWithEmailPassword } from "@/services/firebase/auth";
 
@@ -28,7 +28,13 @@ export default function LoginScreen() {
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-black px-6">
+    <KeyboardAvoidingView
+      className="flex-1 bg-black"
+      behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24 }}
+        keyboardShouldPersistTaps="handled">
+    <View className="items-center">
       <View className="w-full max-w-md rounded-2xl bg-white/10 p-6">
         <Text className="text-2xl font-bold text-white">Sign in</Text>
         <Text className="mt-1 text-white/70">Use your Firebase email/password account.</Text>
@@ -67,6 +73,8 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
     </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
