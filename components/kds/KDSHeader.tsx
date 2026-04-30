@@ -40,7 +40,7 @@ export function KDSHeader({ activeCount, completedCount, onLogout }: Props) {
   });
 
   return (
-    <View className="bg-[#1a1d27] px-4 py-3 flex-row items-center justify-between">
+    <View className="bg-[#1a1d27] px-4 py-3 flex-row items-center justify-between border-b border-white/10">
       {/* Left: status indicator + title */}
       <View className="flex-row items-center gap-2">
         <Animated.View

@@ -8,12 +8,6 @@ interface Props {
 }
 
 export function OrderItemRow({ item, onToggle, disabled }: Props) {
-  const optionText = item.options?.map((o) => o.name).join(", ");
-  const changeTexts = item.changes?.map((c) =>
-    c.to ? `${c.from} → ${c.to}` : `no ${c.from}`,
-  );
-  const extraTexts = item.extras?.map((e) => `+ ${e.description}`);
-
   return (
     <TouchableOpacity
       onPress={onToggle}
@@ -27,7 +21,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
           className={`w-5 h-5 rounded-full border mt-0.5 shrink-0 items-center justify-center ${
             item.completed
               ? "bg-[#22c87a] border-[#22c87a]"
-              : "border-white/40 bg-transparent"
+              : "border-slate-300 bg-white"
           }`}
         >
           {item.completed && (
@@ -39,7 +33,7 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
             <Text
-              className={`text-white text-sm font-medium flex-1 ${
+              className={`text-slate-900 text-sm font-medium flex-1 ${
                 item.completed ? "line-through" : ""
               }`}
             >
@@ -48,24 +42,44 @@ export function OrderItemRow({ item, onToggle, disabled }: Props) {
             </Text>
           </View>
 
-          {optionText ? (
-            <Text className="text-white/40 text-xs mt-0.5">{optionText}</Text>
+          {item.options?.length ? (
+            <>
+              {item.options.map((o) => (
+                <Text key={o.name} className="text-slate-500 text-xs mt-0.5">
+                  * {o.name}
+                </Text>
+              ))}
+            </>
           ) : null}
-          {changeTexts?.map((t, i) => (
-            <Text key={i} className="text-white/40 text-xs">
-              {t}
-            </Text>
-          ))}
-          {extraTexts?.map((t, i) => (
-            <Text key={i} className="text-white/40 text-xs">
-              {t}
-            </Text>
-          ))}
-          {item.instructions ? (
-            <Text className="text-[#f0a020] text-xs italic mt-0.5">
-              {item.instructions}
-            </Text>
+          {item.changes?.length ? (
+            <>
+              {item.changes.map((c) => (
+                <Text
+                  key={`${c.from}-${c.to ?? ""}`}
+                  className="text-slate-500 text-xs mt-0.5"
+                >
+                  * Change: {`${c.from} → ${c.to}`}
+                </Text>
+              ))}
+            </>
           ) : null}
+          {item.extras?.length ? (
+            <>
+              {item.extras.map((e) => (
+                <Text
+                  key={e.description}
+                  className="text-slate-500 text-xs mt-0.5"
+                >
+                  {`+ Add Extra: ${e.description}`}
+                </Text>
+              ))}
+            </>
+          ) : null}
+          {item.instructions && (
+            <Text className="text-amber-700 text-xs italic mt-0.5">
+              * {item.instructions}
+            </Text>
+          )}
         </View>
       </View>
     </TouchableOpacity>

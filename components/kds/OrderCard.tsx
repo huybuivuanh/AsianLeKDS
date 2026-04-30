@@ -42,30 +42,30 @@ export function OrderCard({
     <View
       className={`w-[300px] mx-1.5 my-2 rounded-xl border overflow-hidden flex-col ${
         isCompleted
-          ? "opacity-40 bg-[#141720] border-white/[0.04]"
-          : "bg-[#1e2235] border-white/10"
+          ? "opacity-60 bg-white border-white/10"
+          : "bg-white border-white/10"
       }`}
       style={{ flexShrink: 0, alignSelf: "stretch" }}
     >
       {/* Card header */}
       <View className="px-3 pt-3 pb-2">
         <View className="flex-row items-center justify-between">
-          <Text className="text-white font-bold text-base">
+          <Text className="text-slate-900 font-bold text-base">
             Table: {order.tableNumber}
           </Text>
-          <View className="bg-[#2a2f45] rounded px-2 py-0.5">
-            <Text className="text-white/60 text-xs" numberOfLines={1}>
+          <View className="bg-slate-100 rounded px-2 py-0.5">
+            <Text className="text-slate-600 text-xs" numberOfLines={1}>
               {order.staff}
             </Text>
           </View>
         </View>
         <View className="flex-row items-center justify-between mt-1">
-          <Text className="text-white/50 text-xs">Guests: {order.guests}</Text>
-          {isCompleted && <Text className="text-white/40 text-xs">Done</Text>}
+          <Text className="text-slate-500 text-xs">Guests: {order.guests}</Text>
+          {isCompleted && <Text className="text-slate-400 text-xs">Done</Text>}
         </View>
       </View>
 
-      <View className="h-px bg-white/10 mx-3" />
+      <View className="h-px bg-slate-200 mx-3" />
 
       {/* Items list */}
       <ScrollView
@@ -88,11 +88,11 @@ export function OrderCard({
           const tierBadgeClass = (tier: number) => {
             switch (tier) {
               case 0:
-                return "bg-[#f2c94c] text-black";
+                return "bg-amber-200";
               case 2:
-                return "bg-[#2dd4bf] text-black";
+                return "bg-teal-200";
               default:
-                return "bg-[#2a2f45] text-white";
+                return "bg-slate-200";
             }
           };
 
@@ -102,11 +102,7 @@ export function OrderCard({
                 <View
                   className={`self-start rounded-full px-3 py-1 ${tierBadgeClass(section.tier)}`}
                 >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      section.tier === 1 ? "text-white" : "text-black"
-                    }`}
-                  >
+                  <Text className="text-xs font-semibold text-slate-900">
                     {section.title}
                   </Text>
                 </View>
@@ -128,19 +124,19 @@ export function OrderCard({
         })()}
       </ScrollView>
 
-      <View className="h-px bg-white/10 mx-3" />
+      <View className="h-px bg-slate-200 mx-3" />
 
       {/* Footer */}
       <View className="px-3 py-2">
         {/* Progress bar */}
         <View className="flex-row items-center gap-2 mb-2">
-          <View className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <View className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
             <View
               className="h-full bg-[#22c87a] rounded-full"
               style={{ width: `${pct}%` }}
             />
           </View>
-          <Text className="text-white/40 text-xs">
+          <Text className="text-slate-500 text-xs">
             {doneCount}/{total}
           </Text>
         </View>
@@ -150,13 +146,13 @@ export function OrderCard({
             onPress={onComplete}
             disabled={!allDone}
             className={`rounded-lg py-2 items-center ${
-              allDone ? "bg-[#22c87a]" : "bg-white/10"
+              allDone ? "bg-[#22c87a]" : "bg-slate-100"
             }`}
             activeOpacity={0.8}
           >
             <Text
               className={`text-xs font-semibold ${
-                allDone ? "text-white" : "text-white/30"
+                allDone ? "text-white" : "text-slate-400"
               }`}
             >
               Complete order
