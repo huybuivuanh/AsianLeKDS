@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { KDSOrder } from "@/types/kds";
 import { subscribeToActiveDineInOrders } from "@/services/firebase/orders";
+import { KDSOrder } from "@/types/kds";
 import { groupOrderItemsBySignature } from "@/utils/groupOrderItems";
 import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
+import { useEffect, useState } from "react";
 
 const MAX_COMPLETED = 3;
 
@@ -19,7 +19,9 @@ export function useKDSOrders() {
             ...prev,
             {
               order,
-              items: preprocessOrderItems(groupOrderItemsBySignature(order.orderItems)).map((item) => ({
+              items: preprocessOrderItems(
+                groupOrderItemsBySignature(order.orderItems),
+              ).map((item) => ({
                 ...item,
                 completed: false,
               })),
@@ -37,7 +39,9 @@ export function useKDSOrders() {
             const existingById = new Map(
               o.items.filter((i) => i.id).map((i) => [i.id, i]),
             );
-            const items = preprocessOrderItems(groupOrderItemsBySignature(order.orderItems)).map((item) => ({
+            const items = preprocessOrderItems(
+              groupOrderItemsBySignature(order.orderItems),
+            ).map((item) => ({
               ...item,
               completed: existingById.get(item.id)?.completed ?? false,
             }));
@@ -61,10 +65,15 @@ export function useKDSOrders() {
   const toggleItem = (orderId: string, itemIndex: number) => {
     setKdsOrders((prev) =>
       prev.map((o) => {
-        if (o.order.id !== orderId || o.status === "completed") return o;
+        if (o.order.id !== orderId) return o;
         const items = o.items.map((item, i) =>
           i === itemIndex ? { ...item, completed: !item.completed } : item,
         );
+        const allDone = items.every((item) => item.completed);
+        if (o.status === "completed" && !allDone) {
+          const { completedAt: _, ...rest } = o;
+          return { ...rest, items, status: "active" as const };
+        }
         return { ...o, items };
       }),
     );
@@ -96,5 +105,11 @@ export function useKDSOrders() {
   const activeOrders = kdsOrders.filter((o) => o.status === "active");
   const completedOrders = kdsOrders.filter((o) => o.status === "completed");
 
-  return { activeOrders, completedOrders, startTimes, toggleItem, completeOrder };
+  return {
+    activeOrders,
+    completedOrders,
+    startTimes,
+    toggleItem,
+    completeOrder,
+  };
 }

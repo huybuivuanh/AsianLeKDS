@@ -2,6 +2,7 @@ import { DineInOrder, OrderStatus } from "@/types/types";
 import {
   collection,
   onSnapshot,
+  orderBy,
   query,
   where,
   type DocumentChangeType,
@@ -23,6 +24,7 @@ export function subscribeToActiveDineInOrders(
   const q = query(
     collection(db, "dineInOrders"),
     where("status", "==", OrderStatus.InProgress),
+    orderBy("createdAt", "asc"),
   );
 
   return onSnapshot(q, (snap) => {

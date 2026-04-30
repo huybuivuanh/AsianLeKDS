@@ -41,6 +41,10 @@ export function OrderCard({
   const pct = total > 0 ? (doneCount / total) * 100 : 0;
   const allDone = doneCount === total && total > 0;
 
+  useEffect(() => {
+    if (allDone && !isCompleted) onComplete();
+  }, [allDone]);
+
   return (
     <View
       className={`w-[300px] mx-1.5 my-2 rounded-xl border overflow-hidden flex-col ${
@@ -55,6 +59,12 @@ export function OrderCard({
         <View className="flex-row items-center justify-between">
           <Text className="text-slate-900 font-bold text-base">
             Table: {order.tableNumber}
+          </Text>
+          <Text className="text-slate-500 text-xs tabular-nums">
+            {order.createdAt.toDate().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </Text>
           <View className="bg-slate-100 rounded px-2 py-0.5">
             <Text className="text-slate-600 text-xs" numberOfLines={1}>
@@ -137,7 +147,7 @@ export function OrderCard({
                     key={item.id ?? `${tier}-${index}-${item.name}`}
                     item={item}
                     onToggle={() => onToggleItem(index)}
-                    disabled={isCompleted}
+                    disabled={false}
                   />
                 );
               })}
