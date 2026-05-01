@@ -1,4 +1,5 @@
-import { View, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
 import { logout } from "@/services/firebase/auth";
@@ -8,7 +9,7 @@ export default function KDSScreen() {
     useKDSOrders();
 
   return (
-    <View className="flex-1 bg-[#0f1117]">
+    <SafeAreaView className="flex-1 bg-[#0f1117]" edges={["top", "left", "right"]}>
       <KDSHeader
         activeCount={activeOrders.length}
         completedCount={completedOrders.length}
@@ -42,6 +43,6 @@ export default function KDSScreen() {
           />
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

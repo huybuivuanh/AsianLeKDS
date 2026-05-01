@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { loginWithEmailPassword } from "@/services/firebase/auth";
 
@@ -28,8 +29,9 @@ export default function LoginScreen() {
   }
 
   return (
+    <SafeAreaView className="flex-1 bg-black">
     <KeyboardAvoidingView
-      className="flex-1 bg-black"
+      className="flex-1"
       behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24 }}
@@ -75,6 +77,7 @@ export default function LoginScreen() {
     </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
