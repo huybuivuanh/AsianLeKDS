@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 
 const MAX_COMPLETED = 3;
 
+const isOrderCompleted = (o: KDSOrder): boolean =>
+  o.items.length > 0 && o.items.every((i) => i.completed);
+
 export function useKDSOrders() {
   const [kdsOrders, setKdsOrders] = useState<KDSOrder[]>([]);
   const [startTimes, setStartTimes] = useState<Record<string, number>>({});
@@ -25,7 +28,6 @@ export function useKDSOrders() {
                 ...item,
                 completed: false,
               })),
-              status: "active",
             },
           ];
         });
@@ -35,7 +37,7 @@ export function useKDSOrders() {
       if (type === "modified") {
         setKdsOrders((prev) =>
           prev.map((o) => {
-            if (o.order.id !== order.id || o.status === "completed") return o;
+            if (o.order.id !== order.id || isOrderCompleted(o)) return o;
             const existingById = new Map(
               o.items.filter((i) => i.id).map((i) => [i.id, i]),
             );
@@ -53,8 +55,8 @@ export function useKDSOrders() {
       if (type === "removed") {
         setKdsOrders((prev) =>
           prev.map((o) =>
-            o.order.id === order.id && o.status === "active"
-              ? { ...o, status: "completed", completedAt: Date.now() }
+            o.order.id === order.id && !isOrderCompleted(o)
+              ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
               : o,
           ),
         );
@@ -69,11 +71,6 @@ export function useKDSOrders() {
         const items = o.items.map((item, i) =>
           i === itemIndex ? { ...item, completed: !item.completed } : item,
         );
-        const allDone = items.every((item) => item.completed);
-        if (o.status === "completed" && !allDone) {
-          const { completedAt: _, ...rest } = o;
-          return { ...rest, items, status: "active" as const };
-        }
         return { ...o, items };
       }),
     );
@@ -83,14 +80,11 @@ export function useKDSOrders() {
     setKdsOrders((prev) => {
       const updated = prev.map((o) =>
         o.order.id === orderId
-          ? { ...o, status: "completed" as const, completedAt: Date.now() }
+          ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
           : o,
       );
 
-      // Drop oldest completed orders beyond the cap
-      const completed = updated
-        .filter((o) => o.status === "completed")
-        .sort((a, b) => (a.completedAt ?? 0) - (b.completedAt ?? 0));
+      const completed = updated.filter(isOrderCompleted);
 
       const overflow = completed.slice(
         0,
@@ -102,8 +96,8 @@ export function useKDSOrders() {
     });
   };
 
-  const activeOrders = kdsOrders.filter((o) => o.status === "active");
-  const completedOrders = kdsOrders.filter((o) => o.status === "completed");
+  const activeOrders = kdsOrders.filter((o) => !isOrderCompleted(o));
+  const completedOrders = kdsOrders.filter(isOrderCompleted);
 
   return {
     activeOrders,

@@ -24,8 +24,8 @@ export function OrderCard({
     Math.floor((Date.now() - startTime) / 1000),
   );
 
-  const { order, items, status } = kdsOrder;
-  const isCompleted = status === "completed";
+  const { order, items } = kdsOrder;
+  const isCompleted = items.length > 0 && items.every((i) => i.completed);
 
   useEffect(() => {
     if (isCompleted) return;
@@ -42,7 +42,7 @@ export function OrderCard({
   const allDone = doneCount === total && total > 0;
 
   useEffect(() => {
-    if (allDone && !isCompleted) onComplete();
+    if (allDone) onComplete();
   }, [allDone]);
 
   return (

@@ -7,6 +7,4 @@ export interface KDSOrderItem extends OrderItem {
 export interface KDSOrder {
   order: DineInOrder;
   items: KDSOrderItem[];
-  status: "active" | "completed";
-  completedAt?: number;
 }
