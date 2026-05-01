@@ -26,7 +26,7 @@ export function useKDSOrders() {
                 groupOrderItemsBySignature(order.orderItems),
               ).map((item) => ({
                 ...item,
-                completed: false,
+                completed: item.kitchenType === "Drink",
               })),
             },
           ];
