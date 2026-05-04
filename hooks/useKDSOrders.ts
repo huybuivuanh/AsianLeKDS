@@ -37,7 +37,7 @@ export function useKDSOrders() {
       if (type === "modified") {
         setKdsOrders((prev) =>
           prev.map((o) => {
-            if (o.order.id !== order.id || isOrderCompleted(o)) return o;
+            if (o.order.id !== order.id) return o;
             const existingById = new Map(
               o.items.filter((i) => i.id).map((i) => [i.id, i]),
             );
@@ -45,7 +45,9 @@ export function useKDSOrders() {
               groupOrderItemsBySignature(order.orderItems),
             ).map((item) => ({
               ...item,
-              completed: existingById.get(item.id)?.completed ?? false,
+              completed:
+                existingById.get(item.id)?.completed ??
+                item.kitchenType === "Drink",
             }));
             return { ...o, order, items };
           }),
