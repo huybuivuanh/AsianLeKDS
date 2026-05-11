@@ -44,6 +44,7 @@ export interface OrderItem {
   kitchenType: KitchenType;
   instructions?: string;
   paid: boolean;
+  completed: boolean;
 }
 
 export interface ItemChange {

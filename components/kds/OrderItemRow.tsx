@@ -1,8 +1,8 @@
-import { KDSOrderItem } from "@/types/kds";
+import { OrderItem } from "@/types/types";
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
-  item: KDSOrderItem;
+  item: OrderItem;
   onToggle: () => void;
   disabled: boolean;
 }

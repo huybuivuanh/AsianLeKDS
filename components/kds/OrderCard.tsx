@@ -1,4 +1,4 @@
-import { KDSOrder } from "@/types/kds";
+import { KDSOrder } from "@/hooks/useKDSOrders";
 import {
   dineInItemSortTier,
   kitchenTypeSortRank,

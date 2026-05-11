@@ -1,9 +1,11 @@
-import { DineInOrder, OrderStatus } from "@/types/types";
+import { DineInOrder, OrderItem, OrderStatus } from "@/types/types";
 import {
   collection,
+  doc,
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
   where,
   type DocumentChangeType,
 } from "firebase/firestore";
@@ -33,4 +35,11 @@ export function subscribeToActiveDineInOrders(
       onChange(order, change.type);
     }
   });
+}
+
+export async function updateOrderItems(
+  orderId: string,
+  orderItems: OrderItem[],
+): Promise<void> {
+  await updateDoc(doc(db, "dineInOrders", orderId), { orderItems });
 }
