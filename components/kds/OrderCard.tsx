@@ -3,7 +3,7 @@ import {
   dineInItemSortTier,
   kitchenTypeSortRank,
 } from "@/utils/orderItemSections";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { OrderItemRow } from "./OrderItemRow";
 
@@ -11,30 +11,11 @@ interface Props {
   kdsOrder: KDSOrder;
   onToggleItem: (index: number) => void;
   onComplete: () => void;
-  startTime: number;
 }
 
-export function OrderCard({
-  kdsOrder,
-  onToggleItem,
-  onComplete,
-  startTime,
-}: Props) {
-  const [elapsed, setElapsed] = useState(
-    Math.floor((Date.now() - startTime) / 1000),
-  );
-
+export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
   const { order, items } = kdsOrder;
   const isCompleted = items.length > 0 && items.every((i) => i.completed);
-
-  useEffect(() => {
-    if (isCompleted) return;
-    const id = setInterval(
-      () => setElapsed(Math.floor((Date.now() - startTime) / 1000)),
-      1000,
-    );
-    return () => clearInterval(id);
-  }, [isCompleted, startTime]);
 
   const doneCount = items.filter((i) => i.completed).length;
   const total = items.length;
@@ -148,16 +129,14 @@ export function OrderCard({
                   </View>
                 </View>
 
-                {byTier.get(tier)!.map(({ item, index }) => {
-                  return (
-                    <OrderItemRow
-                      key={item.id ?? `${tier}-${index}-${item.name}`}
-                      item={item}
-                      onToggle={() => onToggleItem(index)}
-                      disabled={false}
-                    />
-                  );
-                })}
+                {byTier.get(tier)!.map(({ item, index }) => (
+                  <OrderItemRow
+                    key={item.id ?? `${tier}-${index}-${item.name}`}
+                    item={item}
+                    onToggle={() => onToggleItem(index)}
+                    disabled={false}
+                  />
+                ))}
               </View>
             ));
         })()}
@@ -167,7 +146,6 @@ export function OrderCard({
 
       {/* Footer */}
       <View className="px-3 py-2">
-        {/* Progress bar */}
         <View className="flex-row items-center gap-2 mb-2">
           <View className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
             <View

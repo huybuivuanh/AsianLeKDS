@@ -2,7 +2,7 @@ import {
   subscribeToActiveDineInOrders,
   updateOrderItems,
 } from "@/services/firebase/orders";
-import { DineInOrder, KitchenType, OrderItem } from "@/types/types";
+import { DineInOrder, KitchenType, OrderItem, OrderStatus } from "@/types/types";
 import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
 import { useEffect, useState } from "react";
 
@@ -22,7 +22,6 @@ function buildDisplayItems(order: DineInOrder): OrderItem[] {
   );
 }
 
-// Returns orderItems with drinks forced to completed: true, or null if already all done.
 function withDrinksCompleted(orderItems: OrderItem[]): OrderItem[] | null {
   const needsUpdate = orderItems.some(
     (i) => i.kitchenType === KitchenType.Drink && !i.completed,
@@ -35,7 +34,6 @@ function withDrinksCompleted(orderItems: OrderItem[]): OrderItem[] | null {
 
 export function useKDSOrders() {
   const [kdsOrders, setKdsOrders] = useState<KDSOrder[]>([]);
-  const [startTimes, setStartTimes] = useState<Record<string, number>>({});
 
   useEffect(() => {
     return subscribeToActiveDineInOrders((order, type) => {
@@ -55,7 +53,6 @@ export function useKDSOrders() {
             { order: effectiveOrder, items: buildDisplayItems(effectiveOrder) },
           ];
         });
-        setStartTimes((prev) => ({ ...prev, [order.id!]: Date.now() }));
       }
 
       if (type === "modified") {
@@ -69,13 +66,17 @@ export function useKDSOrders() {
       }
 
       if (type === "removed") {
-        setKdsOrders((prev) =>
-          prev.map((o) =>
-            o.order.id === order.id && !isOrderCompleted(o)
-              ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
-              : o,
-          ),
-        );
+        if (order.status === OrderStatus.Completed) {
+          setKdsOrders((prev) =>
+            prev.map((o) =>
+              o.order.id === order.id && !isOrderCompleted(o)
+                ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
+                : o,
+            ),
+          );
+        } else {
+          setKdsOrders((prev) => prev.filter((o) => o.order.id !== order.id));
+        }
       }
     });
   }, []);
@@ -138,11 +139,5 @@ export function useKDSOrders() {
   const activeOrders = kdsOrders.filter((o) => !isOrderCompleted(o));
   const completedOrders = kdsOrders.filter(isOrderCompleted);
 
-  return {
-    activeOrders,
-    completedOrders,
-    startTimes,
-    toggleItem,
-    completeOrder,
-  };
+  return { activeOrders, completedOrders, toggleItem, completeOrder };
 }

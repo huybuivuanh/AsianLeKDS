@@ -5,7 +5,7 @@ import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
 import { logout } from "@/services/firebase/auth";
 
 export default function KDSScreen() {
-  const { activeOrders, completedOrders, startTimes, toggleItem, completeOrder } =
+  const { activeOrders, completedOrders, toggleItem, completeOrder } =
     useKDSOrders();
 
   return (
@@ -29,7 +29,6 @@ export default function KDSScreen() {
             kdsOrder={o}
             onToggleItem={(index) => toggleItem(o.order.id!, index)}
             onComplete={() => completeOrder(o.order.id!)}
-            startTime={startTimes[o.order.id!] ?? Date.now()}
           />
         ))}
         {completedOrders.length > 0 && <QueueDivider />}
@@ -39,7 +38,6 @@ export default function KDSScreen() {
             kdsOrder={o}
             onToggleItem={(index) => toggleItem(o.order.id!, index)}
             onComplete={() => completeOrder(o.order.id!)}
-            startTime={startTimes[o.order.id!] ?? Date.now()}
           />
         ))}
       </ScrollView>
