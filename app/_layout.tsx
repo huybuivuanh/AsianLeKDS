@@ -6,6 +6,7 @@ import { Redirect, useSegments } from "expo-router";
 import { useFirebaseUser } from "@/services/firebase/auth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Updates from "expo-updates";
+import { useKeepAwake } from "expo-keep-awake";
 import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
@@ -14,6 +15,7 @@ const RELOAD_AFTER_MS = 5 * 60 * 1000;
 export default function RootLayout() {
   const { user, isLoading } = useFirebaseUser();
   const backgroundedAt = useRef<number | null>(null);
+  useKeepAwake();
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
