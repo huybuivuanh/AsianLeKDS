@@ -3,7 +3,6 @@ import {
   updateOrderItems,
 } from "@/services/firebase/orders";
 import { DineInOrder, KitchenType, OrderItem, OrderStatus } from "@/types/types";
-import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
 import { useEffect, useState } from "react";
 
 export interface KDSOrder {
@@ -17,9 +16,7 @@ const isOrderCompleted = (o: KDSOrder): boolean =>
   o.items.length > 0 && o.items.every((i) => i.completed);
 
 function buildDisplayItems(order: DineInOrder): OrderItem[] {
-  return preprocessOrderItems(
-    order.orderItems.filter((i) => i.kitchenType !== KitchenType.Drink),
-  );
+  return order.orderItems.filter((i) => i.kitchenType !== KitchenType.Drink);
 }
 
 function withDrinksCompleted(orderItems: OrderItem[]): OrderItem[] | null {
