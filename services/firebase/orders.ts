@@ -1,4 +1,4 @@
-import { DineInOrder, OrderItem, OrderStatus } from "@/types/types";
+import { DineInOrder, OrderItem, OrderStatus, OrderType, TakeOutOrder } from "@/types/types";
 import {
   collection,
   doc,
@@ -12,14 +12,10 @@ import {
 import { db } from "./config";
 
 export type OrderChangeHandler = (
-  order: DineInOrder,
+  order: DineInOrder | TakeOutOrder,
   type: DocumentChangeType,
 ) => void;
 
-/**
- * Subscribes to active DineIn orders sorted oldest-first.
- * Returns an unsubscribe function — call it on cleanup.
- */
 export function subscribeToActiveDineInOrders(
   onChange: OrderChangeHandler,
 ): () => void {
@@ -37,9 +33,50 @@ export function subscribeToActiveDineInOrders(
   });
 }
 
+export function subscribeToActiveAllOrders(
+  onChange: OrderChangeHandler,
+): () => void {
+  const dineInQuery = query(
+    collection(db, "dineInOrders"),
+    where("status", "==", OrderStatus.InProgress),
+    orderBy("createdAt", "asc"),
+  );
+  const takeOutQuery = query(
+    collection(db, "takeOutOrders"),
+    where("status", "==", OrderStatus.InProgress),
+    orderBy("createdAt", "asc"),
+  );
+
+  const unsubDineIn = onSnapshot(dineInQuery, (snap) => {
+    for (const change of snap.docChanges()) {
+      const order = { id: change.doc.id, ...change.doc.data() } as DineInOrder;
+      onChange(order, change.type);
+    }
+  });
+
+  const unsubTakeOut = onSnapshot(takeOutQuery, (snap) => {
+    for (const change of snap.docChanges()) {
+      const order = { id: change.doc.id, ...change.doc.data() } as TakeOutOrder;
+      onChange(order, change.type);
+    }
+  });
+
+  return () => {
+    unsubDineIn();
+    unsubTakeOut();
+  };
+}
+
 export async function updateOrderItems(
   orderId: string,
   orderItems: OrderItem[],
+  collectionName: "dineInOrders" | "takeOutOrders" = "dineInOrders",
 ): Promise<void> {
-  await updateDoc(doc(db, "dineInOrders", orderId), { orderItems });
+  await updateDoc(doc(db, collectionName, orderId), { orderItems });
+}
+
+export function collectionForOrder(
+  order: DineInOrder | TakeOutOrder,
+): "dineInOrders" | "takeOutOrders" {
+  return order.orderType === OrderType.DineIn ? "dineInOrders" : "takeOutOrders";
 }

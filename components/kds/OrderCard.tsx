@@ -1,4 +1,5 @@
 import { KDSOrder } from "@/hooks/useKDSOrders";
+import { DineInOrder, OrderType, TakeOutOrder } from "@/types/types";
 import {
   dineInItemSortTier,
   kitchenTypeSortRank,
@@ -38,8 +39,10 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
       {/* Card header */}
       <View className="px-3 pt-3 pb-2">
         <View className="flex-row items-center justify-between">
-          <Text className="text-slate-900 font-bold text-xl">
-            Table: {order.tableNumber}
+          <Text className="text-slate-900 font-bold text-xl" numberOfLines={1}>
+            {order.orderType === OrderType.DineIn
+              ? `Table: ${(order as DineInOrder).tableNumber}`
+              : ((order as TakeOutOrder).customerName ?? "Take Out")}
           </Text>
           <Text className="text-slate-500 text-medium tabular-nums">
             {order.createdAt.toDate().toLocaleTimeString([], {
@@ -54,9 +57,17 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
           </View>
         </View>
         <View className="flex-row items-center justify-between mt-1">
-          <Text className="text-slate-500 text-medium">
-            Guests: {order.guests}
-          </Text>
+          {order.orderType === OrderType.DineIn ? (
+            <Text className="text-slate-500 text-medium">
+              Guests: {(order as DineInOrder).guests}
+            </Text>
+          ) : (order as TakeOutOrder).phoneNumber ? (
+            <Text className="text-slate-500 text-medium">
+              {(order as TakeOutOrder).phoneNumber}
+            </Text>
+          ) : (
+            <View />
+          )}
           {isCompleted && (
             <Text className="text-slate-400 text-medium">Done</Text>
           )}

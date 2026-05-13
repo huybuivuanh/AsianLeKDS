@@ -1,19 +1,18 @@
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
+  title: string;
   activeCount: number;
   completedCount: number;
   onLogout?: () => void;
 }
 
-export function KDSHeader({ activeCount, completedCount, onLogout }: Props) {
+export function KDSHeader({ title, activeCount, completedCount, onLogout }: Props) {
   return (
     <View className="bg-[#1a1d27] px-4 py-3 flex-row items-center justify-between border-b border-white/10">
-      {/* Left: status indicator + title */}
+      {/* Left: title */}
       <View className="flex-row items-center gap-2">
-        <Text className="text-white font-semibold text-sm">
-          Kitchen Display — Dine In
-        </Text>
+        <Text className="text-white font-semibold text-sm">{title}</Text>
       </View>
 
       {/* Center: counters */}

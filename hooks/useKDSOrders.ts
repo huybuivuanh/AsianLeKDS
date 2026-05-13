@@ -1,13 +1,21 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  subscribeToActiveDineInOrders,
+  type OrderChangeHandler,
+  collectionForOrder,
   updateOrderItems,
 } from "@/services/firebase/orders";
-import { DineInOrder, KitchenType, OrderItem, OrderStatus } from "@/types/types";
+import {
+  DineInOrder,
+  KitchenType,
+  OrderItem,
+  OrderStatus,
+  TakeOutOrder,
+} from "@/types/types";
 import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface KDSOrder {
-  order: DineInOrder;
+  order: DineInOrder | TakeOutOrder;
   items: OrderItem[];
 }
 
@@ -16,7 +24,7 @@ const MAX_COMPLETED = 3;
 const isOrderCompleted = (o: KDSOrder): boolean =>
   o.items.length > 0 && o.items.every((i) => i.completed);
 
-function buildDisplayItems(order: DineInOrder): OrderItem[] {
+function buildDisplayItems(order: DineInOrder | TakeOutOrder): OrderItem[] {
   return preprocessOrderItems(
     order.orderItems.filter((i) => i.kitchenType !== KitchenType.Drink),
   );
@@ -32,53 +40,92 @@ function withDrinksCompleted(orderItems: OrderItem[]): OrderItem[] | null {
   );
 }
 
-export function useKDSOrders() {
+export function useKDSOrders(
+  subscribe: (onChange: OrderChangeHandler) => () => void,
+  storageKey: string,
+) {
   const [kdsOrders, setKdsOrders] = useState<KDSOrder[]>([]);
+  const completedIds = useRef<Set<string>>(new Set());
+
+  const saveIds = () => {
+    void AsyncStorage.setItem(storageKey, JSON.stringify([...completedIds.current]));
+  };
 
   useEffect(() => {
-    return subscribeToActiveDineInOrders((order, type) => {
-      if (type === "added") {
-        const drinkUpdated = withDrinksCompleted(order.orderItems);
-        if (drinkUpdated) {
-          void updateOrderItems(order.id!, drinkUpdated);
-        }
-        const effectiveOrder = drinkUpdated
-          ? { ...order, orderItems: drinkUpdated }
-          : order;
+    let unsubscribe: (() => void) | undefined;
 
-        setKdsOrders((prev) => {
-          if (prev.find((o) => o.order.id === order.id)) return prev;
-          return [
-            ...prev,
-            { order: effectiveOrder, items: buildDisplayItems(effectiveOrder) },
-          ];
+    // Load persisted completed IDs before starting the subscription so
+    // orders arriving in the first snapshot are immediately marked completed.
+    AsyncStorage.getItem(storageKey)
+      .then((raw) => {
+        if (raw) {
+          const ids: string[] = JSON.parse(raw) as string[];
+          completedIds.current = new Set(ids);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        unsubscribe = subscribe((order, type) => {
+          if (type === "added") {
+            const drinkUpdated = withDrinksCompleted(order.orderItems);
+            if (drinkUpdated) {
+              void updateOrderItems(order.id!, drinkUpdated, collectionForOrder(order));
+            }
+            const effectiveOrder = drinkUpdated
+              ? { ...order, orderItems: drinkUpdated }
+              : order;
+
+            setKdsOrders((prev) => {
+              if (prev.find((o) => o.order.id === order.id)) return prev;
+              const wasCompleted = completedIds.current.has(order.id!);
+              const items = buildDisplayItems(effectiveOrder);
+              return [
+                ...prev,
+                {
+                  order: effectiveOrder,
+                  items: wasCompleted
+                    ? items.map((i) => ({ ...i, completed: true }))
+                    : items,
+                },
+              ];
+            });
+          }
+
+          if (type === "modified") {
+            setKdsOrders((prev) =>
+              prev.map((o) =>
+                o.order.id !== order.id
+                  ? o
+                  : { ...o, order, items: buildDisplayItems(order) },
+              ),
+            );
+          }
+
+          if (type === "removed") {
+            const id = order.id!;
+            completedIds.current.delete(id);
+            saveIds();
+
+            if (order.status === OrderStatus.Completed) {
+              setKdsOrders((prev) =>
+                prev.map((o) =>
+                  o.order.id === id && !isOrderCompleted(o)
+                    ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
+                    : o,
+                ),
+              );
+            } else {
+              setKdsOrders((prev) => prev.filter((o) => o.order.id !== id));
+            }
+          }
         });
-      }
+      });
 
-      if (type === "modified") {
-        setKdsOrders((prev) =>
-          prev.map((o) =>
-            o.order.id !== order.id
-              ? o
-              : { ...o, order, items: buildDisplayItems(order) },
-          ),
-        );
-      }
-
-      if (type === "removed") {
-        if (order.status === OrderStatus.Completed) {
-          setKdsOrders((prev) =>
-            prev.map((o) =>
-              o.order.id === order.id && !isOrderCompleted(o)
-                ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
-                : o,
-            ),
-          );
-        } else {
-          setKdsOrders((prev) => prev.filter((o) => o.order.id !== order.id));
-        }
-      }
-    });
+    return () => {
+      unsubscribe?.();
+    };
+    // subscribe and storageKey are module-level stable references
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleItem = (orderId: string, itemIndex: number) => {
@@ -102,17 +149,20 @@ export function useKDSOrders() {
       }),
     );
 
-    void updateOrderItems(orderId, newRawItems);
+    void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
   };
 
   const completeOrder = (orderId: string) => {
     const orderEntry = kdsOrders.find((o) => o.order.id === orderId);
-    if (!orderEntry) return;
+    if (!orderEntry || isOrderCompleted(orderEntry)) return;
 
     const newRawItems = orderEntry.order.orderItems.map((raw) => ({
       ...raw,
       completed: true,
     }));
+
+    completedIds.current.add(orderId);
+    saveIds();
 
     setKdsOrders((prev) => {
       const updated = prev.map((o) =>
@@ -133,11 +183,14 @@ export function useKDSOrders() {
       return updated.filter((o) => !removeIds.has(o.order.id ?? ""));
     });
 
-    void updateOrderItems(orderId, newRawItems);
+    void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
   };
 
-  const activeOrders = kdsOrders.filter((o) => !isOrderCompleted(o));
-  const completedOrders = kdsOrders.filter(isOrderCompleted);
+  const sorted = [...kdsOrders].sort(
+    (a, b) => a.order.createdAt.toMillis() - b.order.createdAt.toMillis(),
+  );
+  const activeOrders = sorted.filter((o) => !isOrderCompleted(o));
+  const completedOrders = sorted.filter(isOrderCompleted);
 
   return { activeOrders, completedOrders, toggleItem, completeOrder };
 }
