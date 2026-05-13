@@ -27,14 +27,17 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.buivuanhhuy.AsianLeKDS"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/Asian Le KDS.png"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {
       "typedRoutes": true
     },
