@@ -1,21 +1,24 @@
-import { ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
+import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { logout } from "@/services/firebase/auth";
 import { subscribeToActiveDineInOrders } from "@/services/firebase/orders";
+import { ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DineInScreen() {
   const { activeOrders, completedOrders, toggleItem, completeOrder } =
     useKDSOrders(subscribeToActiveDineInOrders, "kds_completed_dineIn");
 
   return (
-    <SafeAreaView className="flex-1 bg-[#0f1117]" edges={["top", "left", "right"]}>
+    <SafeAreaView
+      className="flex-1 bg-[#0f1117]"
+      edges={["top", "left", "right"]}
+    >
       <KDSHeader
-        title="Kitchen Display — Dine In"
-        activeCount={activeOrders.length}
-        completedCount={completedOrders.length}
-        onLogout={() => { void logout(); }}
+        title="Dine In"
+        onLogout={() => {
+          void logout();
+        }}
       />
       <ScrollView
         horizontal

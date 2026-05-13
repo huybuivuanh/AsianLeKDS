@@ -1,21 +1,24 @@
-import { ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
+import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { logout } from "@/services/firebase/auth";
 import { subscribeToActiveAllOrders } from "@/services/firebase/orders";
+import { ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OrdersScreen() {
   const { activeOrders, completedOrders, toggleItem, completeOrder } =
     useKDSOrders(subscribeToActiveAllOrders, "kds_completed_orders");
 
   return (
-    <SafeAreaView className="flex-1 bg-[#0f1117]" edges={["top", "left", "right"]}>
+    <SafeAreaView
+      className="flex-1 bg-[#0f1117]"
+      edges={["top", "left", "right"]}
+    >
       <KDSHeader
-        title="Kitchen Display — Orders"
-        activeCount={activeOrders.length}
-        completedCount={completedOrders.length}
-        onLogout={() => { void logout(); }}
+        title="Orders"
+        onLogout={() => {
+          void logout();
+        }}
       />
       <ScrollView
         horizontal

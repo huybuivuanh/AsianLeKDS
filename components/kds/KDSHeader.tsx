@@ -2,28 +2,21 @@ import { Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
   title: string;
-  activeCount: number;
-  completedCount: number;
   onLogout?: () => void;
 }
 
-export function KDSHeader({ title, activeCount, completedCount, onLogout }: Props) {
+export function KDSHeader({ title, onLogout }: Props) {
   return (
     <View className="bg-[#1a1d27] px-4 py-3 flex-row items-center justify-between border-b border-white/10">
       {/* Left: title */}
       <View className="flex-row items-center gap-2">
-        <Text className="text-white font-semibold text-sm">{title}</Text>
+        <Text className="text-white font-semibold text-sm">
+          Asian Le Kitchen Display System
+        </Text>
       </View>
 
-      {/* Center: counters */}
-      <View className="flex-row gap-4">
-        <Text className="text-white/60 text-sm">
-          Active <Text className="text-white font-bold">{activeCount}</Text>
-        </Text>
-        <Text className="text-white/60 text-sm">
-          Done <Text className="text-white font-bold">{completedCount}</Text>
-        </Text>
-      </View>
+      {/* Center: title */}
+      <Text className="text-white font-bold">{title}</Text>
 
       {/* Right: live clock + sign out */}
       <View className="flex-row items-center gap-3">
