@@ -1,5 +1,6 @@
 import { KDSOrder } from "@/hooks/useKDSOrders";
 import { DineInOrder, OrderType, TakeOutOrder } from "@/types/types";
+import { takeoutFulfillmentIsScheduled } from "@/utils/helper";
 import {
   dineInItemSortTier,
   kitchenTypeSortRank,
@@ -12,6 +13,13 @@ interface Props {
   kdsOrder: KDSOrder;
   onToggleItem: (index: number) => void;
   onComplete: () => void;
+}
+
+function cardBgClass(order: DineInOrder | TakeOutOrder): string {
+  if (order.orderType === OrderType.DineIn) return "bg-white";
+  if (takeoutFulfillmentIsScheduled(order as TakeOutOrder))
+    return "bg-orange-100 border-orange-200";
+  return "bg-blue-100 border-blue-200";
 }
 
 export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
@@ -29,11 +37,7 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
 
   return (
     <View
-      className={`w-[300px] mx-1.5 my-2 rounded-xl border overflow-hidden flex-col ${
-        isCompleted
-          ? "opacity-60 bg-white border-white/10"
-          : "bg-white border-white/10"
-      }`}
+      className={`w-[300px] mx-1.5 my-2 rounded-xl border border-white/10 overflow-hidden flex-col ${cardBgClass(order)} ${isCompleted ? "opacity-60" : ""}`}
       style={{ flexShrink: 0, alignSelf: "stretch" }}
     >
       {/* Card header */}

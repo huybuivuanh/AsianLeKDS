@@ -106,3 +106,8 @@ export interface TakeOutOrder extends Order {
   phoneNumber?: string;
   fulfillment: TakeOutFulfillment;
 }
+
+export enum TakeOutFulfillmentKind {
+  Immediate = "immediate",
+  Scheduled = "scheduled",
+}
