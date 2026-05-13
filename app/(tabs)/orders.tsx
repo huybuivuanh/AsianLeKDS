@@ -2,6 +2,7 @@ import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
+import { logout } from "@/services/firebase/auth";
 import { subscribeToActiveAllOrders } from "@/services/firebase/orders";
 
 export default function OrdersScreen() {
@@ -14,6 +15,7 @@ export default function OrdersScreen() {
         title="Kitchen Display — Orders"
         activeCount={activeOrders.length}
         completedCount={completedOrders.length}
+        onLogout={() => { void logout(); }}
       />
       <ScrollView
         horizontal
