@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DineInScreen() {
   const { activeOrders, completedOrders, toggleItem, completeOrder } =
-    useKDSOrders(subscribeToActiveDineInOrders, "kds_completed_dineIn");
+    useKDSOrders(subscribeToActiveDineInOrders);
 
   return (
     <SafeAreaView

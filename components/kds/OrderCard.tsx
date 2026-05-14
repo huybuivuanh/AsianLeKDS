@@ -18,6 +18,7 @@ interface Props {
   kdsOrder: KDSOrder;
   onToggleItem: (index: number) => void;
   onComplete: () => void;
+  disableItemToggle?: boolean;
 }
 
 function cardBgClass(order: DineInOrder | TakeOutOrder): string {
@@ -27,7 +28,7 @@ function cardBgClass(order: DineInOrder | TakeOutOrder): string {
   return "bg-blue-100 border-blue-200";
 }
 
-export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
+export function OrderCard({ kdsOrder, onToggleItem, onComplete, disableItemToggle = false }: Props) {
   const { order, items } = kdsOrder;
   const isCompleted = items.length > 0 && items.every((i) => i.completed);
 
@@ -220,7 +221,7 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
                     key={item.id ?? `${tier}-${index}-${item.name}`}
                     item={item}
                     onToggle={() => onToggleItem(index)}
-                    disabled={false}
+                    disabled={disableItemToggle}
                   />
                 ))}
               </View>

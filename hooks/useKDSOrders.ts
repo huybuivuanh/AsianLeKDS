@@ -42,89 +42,99 @@ function withDrinksCompleted(orderItems: OrderItem[]): OrderItem[] | null {
 
 export function useKDSOrders(
   subscribe: (onChange: OrderChangeHandler) => () => void,
-  storageKey: string,
+  storageKey?: string,
+  localOnly = false,
 ) {
   const [kdsOrders, setKdsOrders] = useState<KDSOrder[]>([]);
   const completedIds = useRef<Set<string>>(new Set());
 
   const saveIds = () => {
+    if (!storageKey) return;
     void AsyncStorage.setItem(storageKey, JSON.stringify([...completedIds.current]));
   };
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
-    // Load persisted completed IDs before starting the subscription so
-    // orders arriving in the first snapshot are immediately marked completed.
-    AsyncStorage.getItem(storageKey)
-      .then((raw) => {
-        if (raw) {
-          const ids: string[] = JSON.parse(raw) as string[];
-          completedIds.current = new Set(ids);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        unsubscribe = subscribe((order, type) => {
-          if (type === "added") {
-            const drinkUpdated = withDrinksCompleted(order.orderItems);
-            if (drinkUpdated) {
-              void updateOrderItems(order.id!, drinkUpdated, collectionForOrder(order));
-            }
-            const effectiveOrder = drinkUpdated
-              ? { ...order, orderItems: drinkUpdated }
-              : order;
-
-            setKdsOrders((prev) => {
-              if (prev.find((o) => o.order.id === order.id)) return prev;
-              const wasCompleted = completedIds.current.has(order.id!);
-              const items = buildDisplayItems(effectiveOrder);
-              return [
-                ...prev,
-                {
-                  order: effectiveOrder,
-                  items: wasCompleted
-                    ? items.map((i) => ({ ...i, completed: true }))
-                    : items,
-                },
-              ];
-            });
+    const startSubscription = () => {
+      unsubscribe = subscribe((order, type) => {
+        if (type === "added") {
+          const drinkUpdated = withDrinksCompleted(order.orderItems);
+          if (drinkUpdated && !localOnly) {
+            void updateOrderItems(order.id!, drinkUpdated, collectionForOrder(order));
           }
+          const effectiveOrder = drinkUpdated
+            ? { ...order, orderItems: drinkUpdated }
+            : order;
 
-          if (type === "modified") {
+          setKdsOrders((prev) => {
+            if (prev.find((o) => o.order.id === order.id)) return prev;
+            const wasCompleted = completedIds.current.has(order.id!);
+            const items = buildDisplayItems(effectiveOrder);
+            return [
+              ...prev,
+              {
+                order: effectiveOrder,
+                items: wasCompleted
+                  ? items.map((i) => ({ ...i, completed: true }))
+                  : items,
+              },
+            ];
+          });
+        }
+
+        if (type === "modified") {
+          setKdsOrders((prev) =>
+            prev.map((o) => {
+              if (o.order.id !== order.id) return o;
+              const items = buildDisplayItems(order);
+              const wasLocallyCompleted = completedIds.current.has(order.id!);
+              return {
+                ...o,
+                order,
+                items: wasLocallyCompleted
+                  ? items.map((i) => ({ ...i, completed: true }))
+                  : items,
+              };
+            }),
+          );
+        }
+
+        if (type === "removed") {
+          const id = order.id!;
+          completedIds.current.delete(id);
+          saveIds();
+
+          if (order.status === OrderStatus.Completed) {
             setKdsOrders((prev) =>
               prev.map((o) =>
-                o.order.id !== order.id
-                  ? o
-                  : { ...o, order, items: buildDisplayItems(order) },
+                o.order.id === id && !isOrderCompleted(o)
+                  ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
+                  : o,
               ),
             );
+          } else {
+            setKdsOrders((prev) => prev.filter((o) => o.order.id !== id));
           }
-
-          if (type === "removed") {
-            const id = order.id!;
-            completedIds.current.delete(id);
-            saveIds();
-
-            if (order.status === OrderStatus.Completed) {
-              setKdsOrders((prev) =>
-                prev.map((o) =>
-                  o.order.id === id && !isOrderCompleted(o)
-                    ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
-                    : o,
-                ),
-              );
-            } else {
-              setKdsOrders((prev) => prev.filter((o) => o.order.id !== id));
-            }
-          }
-        });
+        }
       });
-
-    return () => {
-      unsubscribe?.();
     };
-    // subscribe and storageKey are module-level stable references
+
+    if (storageKey) {
+      AsyncStorage.getItem(storageKey)
+        .then((raw) => {
+          if (raw) {
+            const ids: string[] = JSON.parse(raw) as string[];
+            completedIds.current = new Set(ids);
+          }
+        })
+        .catch(() => {})
+        .finally(() => { startSubscription(); });
+    } else {
+      startSubscription();
+    }
+
+    return () => { unsubscribe?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -149,20 +159,31 @@ export function useKDSOrders(
       }),
     );
 
-    void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
+    if (!newCompleted && completedIds.current.has(orderId)) {
+      completedIds.current.delete(orderId);
+      saveIds();
+    }
+
+    if (!localOnly) {
+      void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
+    }
   };
 
   const completeOrder = (orderId: string) => {
     const orderEntry = kdsOrders.find((o) => o.order.id === orderId);
-    if (!orderEntry || isOrderCompleted(orderEntry)) return;
+    if (!orderEntry) return;
+
+    // Always persist to AsyncStorage regardless of current completion state,
+    // so checkbox-triggered completion (useEffect path) is also restored on restart.
+    completedIds.current.add(orderId);
+    saveIds();
+
+    if (isOrderCompleted(orderEntry)) return;
 
     const newRawItems = orderEntry.order.orderItems.map((raw) => ({
       ...raw,
       completed: true,
     }));
-
-    completedIds.current.add(orderId);
-    saveIds();
 
     setKdsOrders((prev) => {
       const updated = prev.map((o) =>
@@ -183,7 +204,9 @@ export function useKDSOrders(
       return updated.filter((o) => !removeIds.has(o.order.id ?? ""));
     });
 
-    void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
+    if (!localOnly) {
+      void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
+    }
   };
 
   const sorted = [...kdsOrders].sort(

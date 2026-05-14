@@ -2,12 +2,13 @@ import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
 import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { logout } from "@/services/firebase/auth";
 import { subscribeToActiveAllOrders } from "@/services/firebase/orders";
+import { OrderType } from "@/types/types";
 import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OrdersScreen() {
   const { activeOrders, completedOrders, toggleItem, completeOrder } =
-    useKDSOrders(subscribeToActiveAllOrders, "kds_completed_orders");
+    useKDSOrders(subscribeToActiveAllOrders, "kds_completed_orders", true);
 
   return (
     <SafeAreaView
@@ -32,6 +33,7 @@ export default function OrdersScreen() {
             kdsOrder={o}
             onToggleItem={(index) => toggleItem(o.order.id!, index)}
             onComplete={() => completeOrder(o.order.id!)}
+            disableItemToggle={o.order.orderType === OrderType.DineIn}
           />
         ))}
         {completedOrders.length > 0 && <QueueDivider />}
@@ -41,6 +43,7 @@ export default function OrdersScreen() {
             kdsOrder={o}
             onToggleItem={(index) => toggleItem(o.order.id!, index)}
             onComplete={() => completeOrder(o.order.id!)}
+            disableItemToggle={o.order.orderType === OrderType.DineIn}
           />
         ))}
       </ScrollView>
