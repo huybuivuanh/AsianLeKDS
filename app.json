@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "AsianLeKDS",
+    "name": "Asian Le KDS",
     "slug": "AsianLeKDS",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -35,9 +35,7 @@
       "output": "static",
       "favicon": "./assets/Asian Le KDS.png"
     },
-    "plugins": [
-      "expo-router"
-    ],
+    "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
     },
