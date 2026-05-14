@@ -9,6 +9,7 @@ import {
   KitchenType,
   OrderItem,
   OrderStatus,
+  OrderType,
   TakeOutOrder,
 } from "@/types/types";
 import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
@@ -209,9 +210,15 @@ export function useKDSOrders(
     }
   };
 
-  const sorted = [...kdsOrders].sort(
-    (a, b) => a.order.createdAt.toMillis() - b.order.createdAt.toMillis(),
-  );
+  const PRE_ORDER_LEAD_MS = 30 * 60 * 1000;
+  const sortKey = (o: KDSOrder): number => {
+    const { order } = o;
+    if (order.orderType === OrderType.TakeOut && order.fulfillment.kind === "scheduled") {
+      return order.fulfillment.scheduledAt.toMillis() - PRE_ORDER_LEAD_MS;
+    }
+    return order.createdAt.toMillis();
+  };
+  const sorted = [...kdsOrders].sort((a, b) => sortKey(a) - sortKey(b));
   const activeOrders = sorted.filter((o) => !isOrderCompleted(o));
   const completedOrders = sorted.filter(isOrderCompleted);
 
