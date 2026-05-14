@@ -1,5 +1,10 @@
 import { KDSOrder } from "@/hooks/useKDSOrders";
-import { DineInOrder, OrderType, TakeOutOrder } from "@/types/types";
+import {
+  DineInOrder,
+  OrderType,
+  TakeOutFulfillment,
+  TakeOutOrder,
+} from "@/types/types";
 import { takeoutFulfillmentIsScheduled } from "@/utils/helper";
 import {
   dineInItemSortTier,
@@ -42,43 +47,109 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
     >
       {/* Card header */}
       <View className="px-3 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-slate-900 font-bold text-xl" numberOfLines={1}>
-            {order.orderType === OrderType.DineIn
-              ? `Table: ${(order as DineInOrder).tableNumber}`
-              : ((order as TakeOutOrder).customerName ?? "Take Out")}
-          </Text>
-          <Text className="text-slate-500 text-medium tabular-nums">
-            {order.createdAt.toDate().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-          <View className="bg-slate-100 rounded px-2 py-0.5">
-            <Text className="text-slate-600 text-medium" numberOfLines={1}>
-              {order.staff}
-            </Text>
-          </View>
-        </View>
-        <View className="flex-row items-center justify-between mt-1">
+        {/* Centered order type label */}
+        <View className="items-center mb-2">
           {order.orderType === OrderType.DineIn ? (
-            <Text className="text-slate-500 text-medium">
-              Guests: {(order as DineInOrder).guests}
+            <Text className="text-slate-900 font-bold text-3xl">
+              Table {(order as DineInOrder).tableNumber}
             </Text>
-          ) : (order as TakeOutOrder).phoneNumber ? (
-            <Text className="text-slate-500 text-medium">
-              {(order as TakeOutOrder).phoneNumber}
-            </Text>
+          ) : takeoutFulfillmentIsScheduled(order as TakeOutOrder) ? (
+            <>
+              <Text className="text-orange-600 font-bold text-3xl tracking-wide">
+                Pre-Order
+              </Text>
+              <Text className="text-orange-700 text-sm font-semibold mt-0.5">
+                {(
+                  (order as TakeOutOrder).fulfillment as Extract<
+                    TakeOutFulfillment,
+                    { kind: "scheduled" }
+                  >
+                ).scheduledAt
+                  .toDate()
+                  .toLocaleString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+              </Text>
+            </>
           ) : (
-            <View />
-          )}
-          {isCompleted && (
-            <Text className="text-slate-400 text-medium">Done</Text>
+            <Text className="text-blue-600 font-bold text-3xl tracking-wide">
+              Take Out
+            </Text>
           )}
         </View>
+
+        {/* Detail rows */}
+        {order.orderType === OrderType.DineIn ? (
+          <>
+            <View className="flex-row items-center justify-between mt-1">
+              <Text className="text-slate-900 text-sm font-bold">
+                {(order as DineInOrder).guests}{" "}
+                {(order as DineInOrder).guests === 1 ? "Guest" : "Guests"}
+              </Text>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-slate-900 text-sm font-bold tabular-nums">
+                  {order.createdAt.toDate().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+            </View>
+            <View className="flex-row items-center justify-between mt-1">
+              <Text
+                className="text-slate-900 text-sm font-bold"
+                numberOfLines={1}
+              >
+                Staff:{order.staff}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View className="flex-row items-center justify-between">
+              {(order as TakeOutOrder).customerName ? (
+                <Text
+                  className="text-slate-900 text-sm font-bold"
+                  numberOfLines={1}
+                >
+                  {(order as TakeOutOrder).customerName}
+                </Text>
+              ) : (
+                <View />
+              )}
+              {(order as TakeOutOrder).phoneNumber ? (
+                <Text className="text-slate-900 text-sm font-bold tabular-nums">
+                  {(order as TakeOutOrder).phoneNumber}
+                </Text>
+              ) : null}
+            </View>
+            <View className="flex-row items-center justify-between mt-1">
+              <Text
+                className="text-slate-900 text-sm font-bold"
+                numberOfLines={1}
+              >
+                Staff: {order.staff}
+              </Text>
+              <View className="flex-row items-center gap-2">
+                {isCompleted && (
+                  <Text className="text-slate-900 text-sm font-bold">Done</Text>
+                )}
+                <Text className="text-slate-900 text-sm font-bold tabular-nums">
+                  {order.createdAt.toDate().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
       </View>
 
-      <View className="h-px bg-slate-200 mx-3" />
+      <View className="h-px bg-slate-500 mx-3" />
 
       {/* Items list */}
       <ScrollView
@@ -122,11 +193,11 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
           const tierBadgeClass = (tier: number) => {
             switch (tier) {
               case 0:
-                return "bg-amber-200";
+                return "bg-amber-500";
               case 2:
-                return "bg-teal-200";
+                return "bg-teal-600";
               default:
-                return "bg-slate-200";
+                return "bg-slate-600";
             }
           };
 
@@ -138,7 +209,7 @@ export function OrderCard({ kdsOrder, onToggleItem, onComplete }: Props) {
                   <View
                     className={`self-start rounded-full px-3 py-1 ${tierBadgeClass(tier)}`}
                   >
-                    <Text className="text-xs font-semibold text-slate-900">
+                    <Text className="text-xs font-semibold text-white">
                       {SECTION_TITLES[tier]}
                     </Text>
                   </View>
