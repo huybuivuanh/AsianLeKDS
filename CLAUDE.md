@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**AsianLeKDS** is a Kitchen Display System (KDS) for dine-in orders. It connects to a shared Firestore database via `onSnapshot`, renders a horizontal scrollable queue of order cards, and tracks item/order completion locally — no writes back to Firestore.
+**AsianLeKDS** is a Kitchen Display System (KDS) with two tabs:
+- **Dine In** — for servers to track food delivery and table completion. Syncs item completion state to Firestore.
+- **Orders** — for cooks to see all orders (dine-in + take-out). All completion state is local only (AsyncStorage), no Firestore writes.
+
+Both tabs connect to Firestore via `onSnapshot` and render a horizontal scrollable queue of order cards.
 
 ## Commands
 
@@ -23,30 +27,34 @@ There are no test or lint scripts configured yet.
 - **React Native** 0.81 + **React** 19
 - **NativeWind** v4 + **Tailwind CSS** v3 for styling (`className` prop)
 - **Firebase JS SDK** (`firebase/firestore`) for Firestore real-time listener
+- **AsyncStorage** (`@react-native-async-storage/async-storage`) for Orders tab completion persistence
 - **TypeScript** (strict mode, `@/*` path alias resolves to repo root)
 
-## Actual file layout
+## File layout
 
 ```
 app/
-  index.tsx                # KDSScreen — renders the queue, consumes useKDSOrders
+  _layout.tsx              # expo-router root layout — auth redirects, keep-awake, 5-min reload
   login.tsx                # login screen
-  _layout.tsx              # expo-router root layout
+  (tabs)/
+    _layout.tsx            # tab navigator (Dine In + Orders)
+    index.tsx              # Dine In screen
+    orders.tsx             # Orders screen
 components/kds/
-  KDSHeader.tsx            # title bar with live clock and active/done counts
+  KDSHeader.tsx            # title bar with tab title, active/done counts, sign out
   OrderCard.tsx            # single order card (header, item list, progress, complete button)
   OrderItemRow.tsx         # individual item row with checkbox toggle
   QueueDivider.tsx         # thin vertical separator between active and completed sections
 hooks/
-  useKDSOrders.ts          # all KDS state — Firestore subscription, toggle, complete
+  useKDSOrders.ts          # all KDS state — Firestore subscription, toggle, complete, AsyncStorage
 services/firebase/
   config.ts                # Firebase app + Firestore db init
   auth.ts                  # login / logout
-  orders.ts                # subscribeToActiveDineInOrders (onSnapshot wrapper)
+  orders.ts                # subscribeToActiveDineInOrders, subscribeToActiveAllOrders, updateOrderItems, collectionForOrder
 types/
-  kds.ts                   # KDSOrderItem, KDSOrder (local-only types)
-  types.ts                 # shared domain types (OrderItem, DineInOrder, KitchenType, …)
+  types.ts                 # shared domain types (OrderItem, DineInOrder, TakeOutOrder, KitchenType, …)
 utils/
+  helper.ts                # takeoutFulfillmentIsScheduled, formatPhone
   groupOrderItems.ts       # groupOrderItemsBySignature — merges duplicate lines, sums qty
   preprocessOrderItems.ts  # preprocessOrderItems — embeds option abbreviations into name
   orderItemSections.ts     # dineInItemSortTier, kitchenTypeSortRank, groupOrderItemsByDisplaySection
@@ -54,44 +62,84 @@ utils/
 
 ## Architecture
 
+### Tabs
+
+Two independent tab screens, each with its own `useKDSOrders` instance:
+
+| | Dine In | Orders |
+|---|---|---|
+| Subscribe fn | `subscribeToActiveDineInOrders` | `subscribeToActiveAllOrders` |
+| Collections | `dineInOrders` | `dineInOrders` + `takeOutOrders` |
+| Firestore writes | Yes (toggles + complete) | No (`localOnly = true`) |
+| AsyncStorage | No | Yes (`kds_completed_orders`) |
+| Item toggles | Enabled | Enabled (local only) |
+| Dine-in item toggles | N/A | Disabled (`disableItemToggle`) |
+| Completion persistence | Firestore | AsyncStorage |
+
 ### State model (`hooks/useKDSOrders.ts`)
 
-All KDS state lives in `useKDSOrders`. A single `useState<KDSOrder[]>` holds every order. Completion state is **local only** — nothing is written to Firestore.
+```typescript
+useKDSOrders(
+  subscribe: (onChange: OrderChangeHandler) => () => void,
+  storageKey?: string,   // omit for Dine In (no AsyncStorage needed)
+  localOnly = false,     // true for Orders tab — skips all Firestore writes
+)
+```
 
-- `activeOrders` / `completedOrders` are derived by filtering `kdsOrders`.
-- Max **3 completed** orders are kept; the oldest is dropped when a 4th is completed. This cap is enforced in both `completeOrder` and the `"removed"` handler.
-- Firestore `"removed"` events auto-mark the matching active order as completed locally (POS closed it).
-- Firestore `"modified"` events update items and order metadata while preserving local `completed` state per item (matched by `item.id`).
-
-### Item processing pipeline
-
-When an order is added or modified, items go through this pipeline before entering state:
-
-1. `groupOrderItemsBySignature(order.orderItems)` — merges lines with identical signatures, summing quantities.
-2. `preprocessOrderItems(grouped)` — embeds option abbreviations into the name (e.g. `#3/ER/Rice`). Does **not** add a quantity prefix — quantity is rendered separately in `OrderItemRow`.
-3. `.map(item => ({ ...item, completed: false }))` — adds local completion flag.
+- `activeOrders` / `completedOrders` derived by filtering `kdsOrders`, sorted by `createdAt asc`.
+- Max **3 completed** orders kept; oldest dropped when a 4th completes (enforced in `completeOrder`).
+- `storageKey` provided → AsyncStorage loaded before Firestore subscription starts (avoids race).
+- `"modified"` events preserve local completion state if the order is in `completedIds` (prevents Firestore updates from un-completing a locally completed order on the Orders tab).
 
 ### Completion logic
 
-- **Auto-complete**: `OrderCard` has a `useEffect` on `allDone` — when every item is checked on an active order, `onComplete()` fires automatically.
-- **Manual complete**: "Complete order" button is always visible and pressable on active orders.
-- **Uncomplete**: Items can be toggled on completed orders. Unchecking any item reverts the order to `"active"` (and clears `completedAt`). Re-checking all items does not auto-complete a second time.
+- **Auto-complete**: `OrderCard` `useEffect` on `allDone` — fires `onComplete()` when every item is checked.
+- **Manual complete**: "Complete order" button visible on all active orders.
+- **AsyncStorage sync**:
+  - `completeOrder` always saves to AsyncStorage before the early-return guard, so both the button path and the checkbox path persist correctly.
+  - `toggleItem` removes the order ID from AsyncStorage when unchecking any item.
+  - `"removed"` handler deletes the ID from AsyncStorage on Firestore cleanup.
 
-### Firestore listener (`services/firebase/orders.ts`)
+### Firestore listeners (`services/firebase/orders.ts`)
 
-Listens to `dineInOrders` collection filtered by `status == "InProgress"`, ordered by `createdAt asc`. Uses `docChanges()` so only deltas are processed.
+- `subscribeToActiveDineInOrders` — listens to `dineInOrders` where `status == "InProgress"`, ordered by `createdAt asc`.
+- `subscribeToActiveAllOrders` — two parallel listeners (`dineInOrders` + `takeOutOrders`), same filter. Returns a single unsubscribe that tears down both.
+- `collectionForOrder(order)` — derives the Firestore collection name from `order.orderType`.
+- `updateOrderItems(orderId, items, collectionName)` — writes item completion state back to Firestore (Dine In tab only).
 
-> **Note**: `where("status") + orderBy("createdAt")` requires a composite Firestore index. If missing, Firestore logs a URL in the console to create it.
+> **Note**: `where("status") + orderBy("createdAt")` requires a composite Firestore index on both collections.
+
+### Order types (`types/types.ts`)
+
+- `DineInOrder` — extends `Order` with `tableNumber: string`, `guests: number`.
+- `TakeOutOrder` — extends `Order` with `customerName?: string`, `phoneNumber?: string`, `fulfillment: TakeOutFulfillment`.
+- `TakeOutFulfillment` — union: `{ kind: "immediate"; readyTimeMinutes?: number }` | `{ kind: "scheduled"; scheduledAt: Timestamp }`.
+- `takeoutFulfillmentIsScheduled(order)` in `utils/helper.ts` — returns true for scheduled take-out (pre-orders).
 
 ### OrderCard display
 
-Header row: `Table: {tableNumber}` — `{createdAt time}` — `{staff badge}`.  
-Items are sorted into three tiers (Appetizers → For Table → To Go), then by kitchen type within each tier (`dineInItemSortTier` / `kitchenTypeSortRank` from `orderItemSections.ts`).  
+Card background colors: white (dine-in), `bg-blue-100` (take-out), `bg-orange-100` (pre-order).
+
+Header (centered label + left-aligned details):
+- **Dine In**: `Table {N}` → guests + time row → staff row
+- **Take Out**: `Take Out` → name + phone row → staff + time row
+- **Pre-Order**: `Pre-Order` + scheduled time → name + phone row → staff + time row
+
+Items sorted into three tiers (Appetizers → For Table → To Go), then by kitchen type within each tier. Tier badges: amber (Appetizers), slate (For Table), teal (To Go) — all with white text.
+
 Footer: progress bar (`doneCount/total`) + "Complete order" button (hidden on completed orders).
 
-### Timer
+Drinks (`KitchenType.Drink`) are filtered out of the display on both tabs.
 
-Elapsed time is tracked with a local `startTimes` record (`Record<string, number>`) keyed by order ID. A 1-second `setInterval` in `OrderCard` drives re-renders for active orders only. The elapsed value is used for internal logic but **not** displayed — the card header shows `order.createdAt` formatted as a wall-clock time instead.
+### Item processing pipeline
+
+When an order is added or modified, items go through:
+1. Filter out drinks (`KitchenType.Drink`)
+2. `preprocessOrderItems` — embeds option abbreviations into the name (e.g. `#3/ER/Rice`)
+
+### Auto-reload
+
+`app/_layout.tsx` reloads the app (`Updates.reloadAsync`) after **5 minutes** in the background. AsyncStorage survives the reload so the Orders tab restores completed state correctly.
 
 ### Styling rules
 
